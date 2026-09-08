@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>multi_flag_nav</name>
+  <version>1.0.0</version>
+  <description>
+    Autonomous multi-point maze navigation for TurtleBot3. Visits runtime-supplied
+    goal points in greedy nearest-first order, ranked by navigable path length
+    from the global planner rather than straight-line distance.
+  </description>
+
+  <maintainer email="sarvarislamov001@gmail.com">Sarvar Islamov</maintainer>
+  <license>MIT</license>
+  <url type="repository">https://github.com/SarvarAi/turtlebot3-maze-flag-navigation</url>
+
+  <author>Sarvar Islamov</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>actionlib</exec_depend>
+  <exec_depend>actionlib_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>move_base_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>map_server</exec_depend>
+  <exec_depend>amcl</exec_depend>
+  <exec_depend>move_base</exec_depend>
+
+  <export/>
+</package>

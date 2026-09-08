@@ -1,0 +1,71 @@
+# move_base tuning for narrow-corridor maze navigation (TurtleBot3 Burger).
+#
+# Loaded last in multi_flag_nav.launch so these values override the TurtleBot3
+# navigation defaults. Every entry here was changed to fix an observed failure;
+# the stock parameters are tuned for open rooms, not 0.6 m corridors.
+
+# --- Costmaps ---------------------------------------------------------------
+# The default 0.2 m inflation leaves the corridor centre and the wall at similar
+# cost, so the planner is happy to hug a wall and the robot clips corners. At
+# 0.65 m the inflation from opposite walls overlaps and the cheapest route runs
+# down the middle of the corridor.
+#
+# cost_scaling_factor stays low (1.2) on purpose. A steep gradient combined with
+# this much inflation saturates a narrow corridor at lethal cost and the global
+# planner reports "no path" for a corridor the robot physically fits through.
+global_costmap:
+  footprint: [[-0.15, -0.15], [-0.15, 0.15], [0.15, 0.15], [0.15, -0.15]]
+  inflation_layer:
+    inflation_radius: 0.65
+    cost_scaling_factor: 1.2
+
+local_costmap:
+  footprint: [[-0.15, -0.15], [-0.15, 0.15], [0.15, 0.15], [0.15, -0.15]]
+  inflation_layer:
+    inflation_radius: 0.65
+    cost_scaling_factor: 1.2
+
+# --- Global planner ---------------------------------------------------------
+# NavfnROS is the TurtleBot3 default and is named explicitly because the
+# navigator node queries its /move_base/NavfnROS/make_plan service to rank flags
+# by navigable path length. Changing the planner changes that service name.
+base_global_planner: "navfn/NavfnROS"
+
+# --- Local planner (DWA) ----------------------------------------------------
+DWAPlannerROS:
+  # Obstacle clearance dominates the trajectory score. At the default 0.01 the
+  # planner traded clearance for progress and scraped door frames.
+  occdist_scale: 1.2
+  # Follow the global path closely rather than cutting toward the goal: in a
+  # maze, the straight line to the goal usually ends at a wall.
+  path_distance_bias: 8.0
+  goal_distance_bias: 6.0
+
+  # 1.0 s horizon. Longer rollouts in a tight maze end in a wall and every
+  # candidate trajectory scores as a collision, which reads as a frozen robot.
+  sim_time: 1.0
+
+  # Slow and deliberate. Burger odometry drifts under hard acceleration, and
+  # AMCL needs time to converge when the LiDAR sees mostly featureless walls.
+  max_vel_x: 0.10
+  min_vel_x: 0.02
+  max_rot_vel: 0.30
+  min_rot_vel: 0.12
+  acc_lim_x: 0.6
+  acc_lim_theta: 0.8
+
+  # Few linear samples, many angular ones: in a corridor the useful decision is
+  # almost always "which way do I turn", not "how fast do I go".
+  vx_samples: 12
+  vtheta_samples: 48
+
+  oscillation_reset_dist: 0.20
+
+# --- Recovery and patience --------------------------------------------------
+# Give the planner time to work before declaring failure, but not so much that
+# a genuinely stuck robot sits still for a minute.
+oscillation_timeout: 6.0
+oscillation_distance: 0.15
+controller_patience: 2.0
+planner_patience: 2.0
+clearing_rotation_allowed: true

@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<!--
+  Full mission launch: map server, AMCL, a tuned move_base, and the flag navigator.
+
+  Replaces the list of `rosparam set` commands the parameters used to be applied
+  with. Those only took effect if they were typed before move_base started;
+  loading them here makes the tuning reproducible and version-controlled.
+
+  Run turtlebot3_bringup on the robot first, then this on the workstation.
+-->
+<launch>
+
+  <arg name="model"     default="$(env TURTLEBOT3_MODEL)" doc="burger | waffle | waffle_pi"/>
+  <arg name="map_file"  default="$(find multi_flag_nav)/maps/b_block_full.yaml"/>
+  <arg name="open_rviz" default="true"/>
+
+  <!-- Mission parameters -->
+  <arg name="num_flags"       default="5"   doc="How many points to collect from RViz clicks"/>
+  <arg name="capture_radius"  default="0.3" doc="Distance from a flag that counts as reaching it (m)"/>
+  <arg name="approach_offset" default="0.1" doc="Stop-short distance so goals on walls stay in free space (m)"/>
+  <arg name="max_retries"     default="10"  doc="Recovery attempts before a flag is skipped"/>
+
+  <!-- Static map -->
+  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)"/>
+
+  <!-- AMCL localisation (LiDAR + wheel odometry against the static map) -->
+  <include file="$(find turtlebot3_navigation)/launch/amcl.launch"/>
+
+  <!--
+    move_base. TurtleBot3's stock parameters load first, then move_base_tuning.yaml
+    overrides the subset this maze needed. Load order matters: last file wins.
+  -->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <rosparam file="$(find turtlebot3_navigation)/param/costmap_common_params_$(arg model).yaml"
+              command="load" ns="global_costmap"/>
+    <rosparam file="$(find turtlebot3_navigation)/param/costmap_common_params_$(arg model).yaml"
+              command="load" ns="local_costmap"/>
+    <rosparam file="$(find turtlebot3_navigation)/param/local_costmap_params.yaml"  command="load"/>
+    <rosparam file="$(find turtlebot3_navigation)/param/global_costmap_params.yaml" command="load"/>
+    <rosparam file="$(find turtlebot3_navigation)/param/move_base_params.yaml"      command="load"/>
+    <rosparam file="$(find turtlebot3_navigation)/param/dwa_local_planner_params_$(arg model).yaml"
+              command="load"/>
+
+    <rosparam file="$(find multi_flag_nav)/config/move_base_tuning.yaml" command="load"/>
+
+    <remap from="cmd_vel" to="/cmd_vel"/>
+    <remap from="odom"    to="/odom"/>
+  </node>
+
+  <!-- Mission logic -->
+  <node pkg="multi_flag_nav" type="multi_flag_navigator.py"
+        name="multi_flag_navigator" output="screen">
+    <param name="num_flags"       value="$(arg num_flags)"/>
+    <param name="capture_radius"  value="$(arg capture_radius)"/>
+    <param name="approach_offset" value="$(arg approach_offset)"/>
+    <param name="max_retries"     value="$(arg max_retries)"/>
+  </node>
+
+  <group if="$(arg open_rviz)">
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find turtlebot3_navigation)/rviz/turtlebot3_navigation.rviz"/>
+  </group>
+
+</launch>
