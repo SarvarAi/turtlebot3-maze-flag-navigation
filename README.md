@@ -30,6 +30,8 @@ they are only once the run has started. Two constraints shape the whole design:
   but slow. Choosing a good order is where the actual work is.
 
 Result: **all 5 flags captured in 4 min 42 s, zero collisions**, on physical hardware.
+The full write-up, including the hardware debugging photographs, is in the
+[capstone report](docs/capstone-report.pdf).
 
 ## The interesting part: what "nearest" means in a maze
 
@@ -236,6 +238,7 @@ catkin_ws/src/multi_flag_nav/
 ├── maps/b_block_full.{pgm,yaml}      # gmapping output, 5 cm/cell
 └── worlds/maze.world                 # Gazebo world for simulation
 docs/ARCHITECTURE.md                  # node graph, message flow, state machine
+docs/capstone-report.pdf              # submitted report, with hardware photographs
 ```
 
 ## What I would do next
